@@ -4,7 +4,7 @@ from typing import Optional, List
 
 from app.auth.dependencies import get_db, get_current_user, require_system_roles
 from app.projects.permissions import user_can_read_project, user_can_update_project
-from app.subcontractors.schemas import SubcontractorCreate, SubcontractorResponse
+from app.subcontractors.schemas import SubcontractorCreate, SubcontractorUpdate, SubcontractorResponse
 from app.models.users import User, ProjectMember
 from app.models.projects import Project
 from app.models.subcontractors import Subcontractor
@@ -60,7 +60,7 @@ def get_subcontractor(project_id: str, subcontractor_id: str, db: Session = Depe
     return SubcontractorResponse.model_validate(subcontractor)
 
 @router.patch("/{subcontractor_id}", response_model=SubcontractorResponse)
-def update_subcontractor(project_id: str, subcontractor_id: str, req: SubcontractorCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def update_subcontractor(project_id: str, subcontractor_id: str, req: SubcontractorUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")

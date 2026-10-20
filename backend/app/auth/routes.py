@@ -57,13 +57,15 @@ def login(req: LoginRequest, response: Response, db: Session = Depends(get_db)):
         path="/auth",
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400
     )
+    # Remove the legacy path-scoped cookie before issuing the SPA-readable one.
+    response.delete_cookie(key="csrf_token", path="/auth", secure=COOKIE_SECURE, samesite="strict")
     response.set_cookie(
         key="csrf_token",
         value=secrets.token_urlsafe(32),
         httponly=False,
         samesite="strict",
         secure=COOKIE_SECURE,
-        path="/auth",
+        path="/",
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 86400
     )
     return {"access_token": access_token, "token_type": "bearer"}
@@ -145,5 +147,6 @@ def logout(
         # Idempotent: no refresh cookie means nothing to revoke
         pass
     response.delete_cookie(key="refresh_token", path="/auth")
+    response.delete_cookie(key="csrf_token", path="/")
     response.delete_cookie(key="csrf_token", path="/auth")
     return {"message": "Logged out"}

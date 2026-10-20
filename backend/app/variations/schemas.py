@@ -9,7 +9,8 @@ class VariationCreate(BaseModel):
     requested_by: str = Field(min_length=1, max_length=255)
     cost_change: Decimal
     margin: Decimal = Field(default=Decimal("0"))
-    total: Decimal
+    # Accepted for compatibility; the server calculates the authoritative total.
+    total: Optional[Decimal] = None
     status: Literal["Draft", "Submitted", "Pending", "Approved", "Rejected"] = Field(default="Draft")
 
 class VariationUpdate(BaseModel):

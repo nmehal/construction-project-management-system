@@ -12,6 +12,16 @@ class SubcontractorCreate(BaseModel):
     paid: Decimal = Field(default=Decimal("0"))
     status: str = Field(default="active", max_length=32)
 
+class SubcontractorUpdate(BaseModel):
+    trade: Optional[str] = Field(default=None, min_length=1, max_length=128)
+    company: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    scope: Optional[str] = Field(default=None, max_length=1000)
+    allowance: Optional[Decimal] = None
+    committed: Optional[Decimal] = None
+    paid: Optional[Decimal] = None
+    status: Optional[str] = Field(default=None, max_length=32)
+
+
 class SubcontractorResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID

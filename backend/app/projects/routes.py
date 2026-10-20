@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 
 from app.auth.dependencies import get_db, get_current_user, require_system_roles
-from app.projects.schemas import ProjectCreate, ProjectResponse, BudgetUpdate
+from app.projects.schemas import ProjectCreate, ProjectUpdate, ProjectResponse, BudgetUpdate, BudgetCategoryResponse
 from app.projects.permissions import (
-    user_can_read_project, user_can_update_project,
+    user_can_read_project, user_can_update_project, project_access,
     user_can_read_budget, user_can_update_budget,
 )
 from app.models.users import User, ProjectMember
@@ -15,8 +15,23 @@ from datetime import datetime, timezone
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
-# Helper: include archived if requested
-ARCHIVE_PARAM = Optional[bool]
+def project_response(project: Project, user: User, db: Session) -> ProjectResponse:
+    return ProjectResponse(
+        id=project.id,
+        name=project.name,
+        client=project.client,
+        suburb=project.suburb,
+        status=project.status,
+        contract_value=project.contract_value,
+        start_date=project.start_date,
+        end_date=project.end_date,
+        is_archived=project.is_archived,
+        archived_at=project.archived_at,
+        forecast_uncommitted_costs=project.forecast_uncommitted_costs,
+        created_at=project.created_at,
+        updated_at=project.updated_at,
+        **project_access(user, db, project),
+    )
 
 @router.post("", response_model=ProjectResponse)
 def create_project(req: ProjectCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -45,7 +60,7 @@ def create_project(req: ProjectCreate, db: Session = Depends(get_db), user: User
     db.add(membership)
     db.commit()
     db.refresh(project)
-    return ProjectResponse.model_validate(project)
+    return project_response(project, user, db)
 
 @router.get("", response_model=List[ProjectResponse])
 def list_projects(
@@ -66,7 +81,7 @@ def list_projects(
         )
         if not include_archived:
             query = query.filter(Project.is_archived == False)
-    return [ProjectResponse.model_validate(p) for p in query.all()]
+    return [project_response(p, user, db) for p in query.all()]
 
 @router.get("/{project_id}", response_model=ProjectResponse)
 def get_project(project_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -75,10 +90,10 @@ def get_project(project_id: str, db: Session = Depends(get_db), user: User = Dep
         raise HTTPException(status_code=404, detail="Project not found")
     if not user_can_read_project(user, db, project):
         raise HTTPException(status_code=403, detail="Access denied")
-    return ProjectResponse.model_validate(project)
+    return project_response(project, user, db)
 
 @router.patch("/{project_id}", response_model=ProjectResponse)
-def update_project(project_id: str, req: ProjectCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def update_project(project_id: str, req: ProjectUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
@@ -100,7 +115,7 @@ def update_project(project_id: str, req: ProjectCreate, db: Session = Depends(ge
         project.end_date = req.end_date
     db.commit()
     db.refresh(project)
-    return ProjectResponse.model_validate(project)
+    return project_response(project, user, db)
 
 @router.post("/{project_id}/archive", response_model=ProjectResponse)
 def archive_project(project_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -113,9 +128,9 @@ def archive_project(project_id: str, db: Session = Depends(get_db), user: User =
     project.archived_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(project)
-    return ProjectResponse.model_validate(project)
+    return project_response(project, user, db)
 
-@router.get("/{project_id}/budget", response_model=list)
+@router.get("/{project_id}/budget", response_model=List[BudgetCategoryResponse])
 def get_project_budget(project_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
@@ -123,7 +138,7 @@ def get_project_budget(project_id: str, db: Session = Depends(get_db), user: Use
     if not user_can_read_budget(user, db, project):
         raise HTTPException(status_code=403, detail="Access denied")
     categories = db.query(BudgetCategory).filter(BudgetCategory.project_id == project_id).all()
-    return [{"id": str(c.id), "category": c.category, "budget": float(c.budget), "committed": float(c.committed), "actual": float(c.actual)} for c in categories]
+    return [BudgetCategoryResponse.model_validate(c) for c in categories]
 
 @router.patch("/{project_id}/budget")
 def update_project_budget(project_id: str, req: BudgetUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):

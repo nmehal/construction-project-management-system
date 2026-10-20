@@ -84,8 +84,6 @@ def update_variation(project_id: str, variation_id: str, req: VariationUpdate, d
         variation.cost_change = req.cost_change
     if req.margin is not None:
         variation.margin = req.margin
-    if req.total is not None:
-        variation.total = req.total
     if req.status is not None:
         if req.status not in ("Draft", "Submitted", "Pending", "Approved", "Rejected"):
             raise HTTPException(status_code=422, detail="Invalid status")
@@ -94,14 +92,9 @@ def update_variation(project_id: str, variation_id: str, req: VariationUpdate, d
             variation.approval_date = datetime.now(timezone.utc)
         elif req.approval_date is not None:
             variation.approval_date = req.approval_date
-    if req.cost_change is not None or req.margin is not None:
-        # Recalculate total when components change
-        if req.cost_change is not None and req.margin is not None:
-            variation.total = Decimal(str(req.cost_change)) + Decimal(str(req.margin))
-        elif req.cost_change is not None:
-            variation.total = Decimal(str(req.cost_change)) + Decimal(str(variation.margin))
-        elif req.margin is not None:
-            variation.total = Decimal(str(variation.cost_change)) + Decimal(str(req.margin))
+    if req.cost_change is not None or req.margin is not None or req.total is not None:
+        # A supplied total cannot override the authoritative Decimal components.
+        variation.total = variation.cost_change + variation.margin
     db.commit()
     db.refresh(variation)
     return VariationResponse.model_validate(variation)
