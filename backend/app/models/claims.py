@@ -2,11 +2,12 @@ from sqlalchemy import Numeric, String, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
+import uuid
 from .base import Base
 
 class ProgressClaim(Base):
     __tablename__ = "progress_claims"
-    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     project_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     claim_no: Mapped[str] = mapped_column(String(64), nullable=False)
     stage: Mapped[str] = mapped_column(String(128))

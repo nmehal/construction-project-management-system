@@ -177,13 +177,25 @@ def test_subcontractor_read_contributor(client, db):
     from app.models.users import ProjectMember
     db.add(ProjectMember(project_id=proj.id, user_id=contrib.id, project_role="Contributor"))
     db.commit()
+    admin_login = client.post("/auth/login", json={"email": admin.email, "password": "password123"})
+    assert admin_login.status_code == 200
+    admin_token = admin_login.json()["access_token"]
+    sub_r = client.post(f"/projects/{proj.id}/subcontractors", json={"trade":"Read Contributor Trade","company":"Read Corp","scope":"Scope","allowance":"800.00","committed":"200.00","paid":"50.00","status":"active"}, headers={"Authorization": f"Bearer {admin_token}"})
+    assert sub_r.status_code == 200, sub_r.text
+    sub_id = sub_r.json()["id"]
     r_login = client.post("/auth/login", json={"email":"contrib_sub_read@test.com","password":"password123"})
     assert r_login.status_code == 200
     token = r_login.json()["access_token"]
-    sub_r = client.post(f"/projects/{proj.id}/subcontractors", json={"trade":"Read Contributor Trade","company":"Read Corp","scope":"Scope","allowance":"800.00","committed":"200.00","paid":"50.00","status":"active"}, headers={"Authorization": f"Bearer {token}"})
-    sub_id = sub_r.json()["id"]
     read_r = client.get(f"/projects/{proj.id}/subcontractors/{sub_id}", headers={"Authorization": f"Bearer {token}"})
-    assert read_r.status_code == 200
+    assert read_r.status_code == 200, read_r.text
+    assert read_r.json() == sub_r.json()
+    assert read_r.json()["id"] == sub_id
+    assert read_r.json()["project_id"] == str(proj.id)
+    assert read_r.json()["trade"] == "Read Contributor Trade"
+    assert read_r.json()["company"] == "Read Corp"
+    assert Decimal(read_r.json()["allowance"]) == Decimal("800.00")
+    assert Decimal(read_r.json()["committed"]) == Decimal("200.00")
+    assert Decimal(read_r.json()["paid"]) == Decimal("50.00")
 
 def test_subcontractor_read_viewer(client, db):
     admin = make_user(db, "admin_sub_read_view@test.com", "Admin")
@@ -192,13 +204,25 @@ def test_subcontractor_read_viewer(client, db):
     from app.models.users import ProjectMember
     db.add(ProjectMember(project_id=proj.id, user_id=viewer.id, project_role="Viewer"))
     db.commit()
+    admin_login = client.post("/auth/login", json={"email": admin.email, "password": "password123"})
+    assert admin_login.status_code == 200
+    admin_token = admin_login.json()["access_token"]
+    sub_r = client.post(f"/projects/{proj.id}/subcontractors", json={"trade":"Read Viewer Trade","company":"Read Corp","scope":"Scope","allowance":"900.00","committed":"300.00","paid":"100.00","status":"active"}, headers={"Authorization": f"Bearer {admin_token}"})
+    assert sub_r.status_code == 200, sub_r.text
+    sub_id = sub_r.json()["id"]
     r_login = client.post("/auth/login", json={"email":"viewer_sub_read@test.com","password":"password123"})
     assert r_login.status_code == 200
     token = r_login.json()["access_token"]
-    sub_r = client.post(f"/projects/{proj.id}/subcontractors", json={"trade":"Read Viewer Trade","company":"Read Corp","scope":"Scope","allowance":"900.00","committed":"300.00","paid":"100.00","status":"active"}, headers={"Authorization": f"Bearer {token}"})
-    sub_id = sub_r.json()["id"]
     read_r = client.get(f"/projects/{proj.id}/subcontractors/{sub_id}", headers={"Authorization": f"Bearer {token}"})
-    assert read_r.status_code == 200
+    assert read_r.status_code == 200, read_r.text
+    assert read_r.json() == sub_r.json()
+    assert read_r.json()["id"] == sub_id
+    assert read_r.json()["project_id"] == str(proj.id)
+    assert read_r.json()["trade"] == "Read Viewer Trade"
+    assert read_r.json()["company"] == "Read Corp"
+    assert Decimal(read_r.json()["allowance"]) == Decimal("900.00")
+    assert Decimal(read_r.json()["committed"]) == Decimal("300.00")
+    assert Decimal(read_r.json()["paid"]) == Decimal("100.00")
 
 def test_subcontractor_read_non_member_denied(client, db):
     admin = make_user(db, "admin_sub_read_non@test.com", "Admin")
@@ -252,3 +276,299 @@ def test_subcontractor_decimal_safety(client, db):
     from sqlalchemy import Numeric
     sub = Subcontractor(project_id="test-decimal-sub", trade="Plumbing", company="Pipe Corp", scope="Pipes", allowance=Decimal("2000.50"), committed=Decimal("0"), paid=Decimal("0"), status="active")
     assert isinstance(sub.allowance, Numeric) or isinstance(sub.allowance, (Decimal, int, float))
+
+
+def test_subcontractor_list_manager(client, db):
+    from app.models.users import ProjectMember
+
+    admin = make_user(db, "admin_sub_restore_list_manager@test.com", "Admin")
+    project = make_project(db, "Fictional Ballarat Renovation", admin.id)
+    admin_login = client.post(
+        "/auth/login", json={"email": admin.email, "password": "password123"},
+    )
+    assert admin_login.status_code == 200, admin_login.text
+    assert admin_login.json()["token_type"] == "bearer"
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+    payload = {
+        "trade": "Plumbing", "company": "Fictional Wattle Plumbing Pty Ltd",
+        "scope": "Bathroom renovation", "allowance": "2000.50",
+        "committed": "1500.25", "paid": "100.10", "status": "active",
+    }
+    url = f"/projects/{project.id}/subcontractors"
+    created = client.post(url, headers=admin_headers, json=payload)
+    assert created.status_code == 200, created.text
+    record = created.json()
+    assert record["project_id"] == str(project.id)
+    assert record["company"] == payload["company"]
+    assert record["trade"] == payload["trade"]
+    assert Decimal(record["paid"]) == Decimal("100.10")
+    actor = make_user(db, "actor_sub_restore_list_manager@test.com", "Viewer")
+    db.add(ProjectMember(
+        project_id=project.id, user_id=actor.id, project_role="Manager",
+    ))
+    db.commit()
+    actor_login = client.post(
+        "/auth/login", json={"email": actor.email, "password": "password123"},
+    )
+    assert actor_login.status_code == 200, actor_login.text
+    assert actor_login.json()["token_type"] == "bearer"
+    headers = {"Authorization": f"Bearer {actor_login.json()['access_token']}"}
+    response = client.get(url, headers=headers)
+    assert response.status_code == 200, response.text
+    assert response.json() == [record]
+    assert Decimal(response.json()[0]["allowance"]) == Decimal("2000.50")
+    assert Decimal(response.json()[0]["committed"]) == Decimal("1500.25")
+
+
+def test_subcontractor_list_contributor(client, db):
+    from app.models.users import ProjectMember
+
+    admin = make_user(db, "admin_sub_restore_list_contributor@test.com", "Admin")
+    project = make_project(db, "Fictional Ballarat Renovation", admin.id)
+    admin_login = client.post(
+        "/auth/login", json={"email": admin.email, "password": "password123"},
+    )
+    assert admin_login.status_code == 200, admin_login.text
+    assert admin_login.json()["token_type"] == "bearer"
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+    payload = {
+        "trade": "Plumbing", "company": "Fictional Wattle Plumbing Pty Ltd",
+        "scope": "Bathroom renovation", "allowance": "2000.50",
+        "committed": "1500.25", "paid": "100.10", "status": "active",
+    }
+    url = f"/projects/{project.id}/subcontractors"
+    created = client.post(url, headers=admin_headers, json=payload)
+    assert created.status_code == 200, created.text
+    record = created.json()
+    assert record["project_id"] == str(project.id)
+    assert record["company"] == payload["company"]
+    assert record["trade"] == payload["trade"]
+    assert Decimal(record["paid"]) == Decimal("100.10")
+    actor = make_user(db, "actor_sub_restore_list_contributor@test.com", "Viewer")
+    db.add(ProjectMember(
+        project_id=project.id, user_id=actor.id, project_role="Contributor",
+    ))
+    db.commit()
+    actor_login = client.post(
+        "/auth/login", json={"email": actor.email, "password": "password123"},
+    )
+    assert actor_login.status_code == 200, actor_login.text
+    assert actor_login.json()["token_type"] == "bearer"
+    headers = {"Authorization": f"Bearer {actor_login.json()['access_token']}"}
+    response = client.get(url, headers=headers)
+    assert response.status_code == 200, response.text
+    assert response.json() == [record]
+    assert Decimal(response.json()[0]["allowance"]) == Decimal("2000.50")
+    assert Decimal(response.json()[0]["committed"]) == Decimal("1500.25")
+
+
+def test_subcontractor_list_viewer(client, db):
+    from app.models.users import ProjectMember
+
+    admin = make_user(db, "admin_sub_restore_list_viewer@test.com", "Admin")
+    project = make_project(db, "Fictional Ballarat Renovation", admin.id)
+    admin_login = client.post(
+        "/auth/login", json={"email": admin.email, "password": "password123"},
+    )
+    assert admin_login.status_code == 200, admin_login.text
+    assert admin_login.json()["token_type"] == "bearer"
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+    payload = {
+        "trade": "Plumbing", "company": "Fictional Wattle Plumbing Pty Ltd",
+        "scope": "Bathroom renovation", "allowance": "2000.50",
+        "committed": "1500.25", "paid": "100.10", "status": "active",
+    }
+    url = f"/projects/{project.id}/subcontractors"
+    created = client.post(url, headers=admin_headers, json=payload)
+    assert created.status_code == 200, created.text
+    record = created.json()
+    assert record["project_id"] == str(project.id)
+    assert record["company"] == payload["company"]
+    assert record["trade"] == payload["trade"]
+    assert Decimal(record["paid"]) == Decimal("100.10")
+    actor = make_user(db, "actor_sub_restore_list_viewer@test.com", "Viewer")
+    db.add(ProjectMember(
+        project_id=project.id, user_id=actor.id, project_role="Viewer",
+    ))
+    db.commit()
+    actor_login = client.post(
+        "/auth/login", json={"email": actor.email, "password": "password123"},
+    )
+    assert actor_login.status_code == 200, actor_login.text
+    assert actor_login.json()["token_type"] == "bearer"
+    headers = {"Authorization": f"Bearer {actor_login.json()['access_token']}"}
+    response = client.get(url, headers=headers)
+    assert response.status_code == 200, response.text
+    assert response.json() == [record]
+    assert Decimal(response.json()[0]["allowance"]) == Decimal("2000.50")
+    assert Decimal(response.json()[0]["committed"]) == Decimal("1500.25")
+
+
+def test_subcontractor_list_non_member_denied(client, db):
+    from app.models.users import ProjectMember
+
+    admin = make_user(db, "admin_sub_restore_list_non_member_denied@test.com", "Admin")
+    project = make_project(db, "Fictional Ballarat Renovation", admin.id)
+    admin_login = client.post(
+        "/auth/login", json={"email": admin.email, "password": "password123"},
+    )
+    assert admin_login.status_code == 200, admin_login.text
+    assert admin_login.json()["token_type"] == "bearer"
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+    payload = {
+        "trade": "Plumbing", "company": "Fictional Wattle Plumbing Pty Ltd",
+        "scope": "Bathroom renovation", "allowance": "2000.50",
+        "committed": "1500.25", "paid": "100.10", "status": "active",
+    }
+    url = f"/projects/{project.id}/subcontractors"
+    created = client.post(url, headers=admin_headers, json=payload)
+    assert created.status_code == 200, created.text
+    record = created.json()
+    assert record["project_id"] == str(project.id)
+    assert record["company"] == payload["company"]
+    assert record["trade"] == payload["trade"]
+    assert Decimal(record["paid"]) == Decimal("100.10")
+    actor = make_user(db, "actor_sub_restore_list_non_member_denied@test.com", "Viewer")
+    assert db.query(ProjectMember).filter_by(
+        project_id=project.id, user_id=actor.id,
+    ).first() is None
+    actor_login = client.post(
+        "/auth/login", json={"email": actor.email, "password": "password123"},
+    )
+    assert actor_login.status_code == 200, actor_login.text
+    assert actor_login.json()["token_type"] == "bearer"
+    headers = {"Authorization": f"Bearer {actor_login.json()['access_token']}"}
+    response = client.get(url, headers=headers)
+    assert response.status_code == 403, response.text
+    assert response.json() == {"detail": "Access denied"}
+
+
+def test_subcontractor_update_admin(client, db):
+    from app.models.users import ProjectMember
+
+    admin = make_user(db, "admin_sub_restore_update_admin@test.com", "Admin")
+    project = make_project(db, "Fictional Ballarat Renovation", admin.id)
+    admin_login = client.post(
+        "/auth/login", json={"email": admin.email, "password": "password123"},
+    )
+    assert admin_login.status_code == 200, admin_login.text
+    assert admin_login.json()["token_type"] == "bearer"
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+    payload = {
+        "trade": "Plumbing", "company": "Fictional Wattle Plumbing Pty Ltd",
+        "scope": "Bathroom renovation", "allowance": "2000.50",
+        "committed": "1500.25", "paid": "100.10", "status": "active",
+    }
+    url = f"/projects/{project.id}/subcontractors"
+    created = client.post(url, headers=admin_headers, json=payload)
+    assert created.status_code == 200, created.text
+    record = created.json()
+    assert record["project_id"] == str(project.id)
+    assert record["company"] == payload["company"]
+    assert record["trade"] == payload["trade"]
+    assert Decimal(record["paid"]) == Decimal("100.10")
+    headers = admin_headers
+    item_url = f"{url}/{record['id']}"
+    response = client.patch(
+        item_url, headers=headers, json={**payload, "paid": "500.75"},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json() == {**record, "paid": "500.75"}
+    assert Decimal(response.json()["paid"]) == Decimal("500.75")
+    persisted = client.get(item_url, headers=admin_headers)
+    assert persisted.status_code == 200, persisted.text
+    assert persisted.json() == response.json()
+
+
+def test_subcontractor_update_contributor_denied(client, db):
+    from app.models.users import ProjectMember
+
+    admin = make_user(db, "admin_sub_restore_update_contributor_denied@test.com", "Admin")
+    project = make_project(db, "Fictional Ballarat Renovation", admin.id)
+    admin_login = client.post(
+        "/auth/login", json={"email": admin.email, "password": "password123"},
+    )
+    assert admin_login.status_code == 200, admin_login.text
+    assert admin_login.json()["token_type"] == "bearer"
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+    payload = {
+        "trade": "Plumbing", "company": "Fictional Wattle Plumbing Pty Ltd",
+        "scope": "Bathroom renovation", "allowance": "2000.50",
+        "committed": "1500.25", "paid": "100.10", "status": "active",
+    }
+    url = f"/projects/{project.id}/subcontractors"
+    created = client.post(url, headers=admin_headers, json=payload)
+    assert created.status_code == 200, created.text
+    record = created.json()
+    assert record["project_id"] == str(project.id)
+    assert record["company"] == payload["company"]
+    assert record["trade"] == payload["trade"]
+    assert Decimal(record["paid"]) == Decimal("100.10")
+    actor = make_user(db, "actor_sub_restore_update_contributor_denied@test.com", "Viewer")
+    db.add(ProjectMember(
+        project_id=project.id, user_id=actor.id, project_role="Contributor",
+    ))
+    db.commit()
+    actor_login = client.post(
+        "/auth/login", json={"email": actor.email, "password": "password123"},
+    )
+    assert actor_login.status_code == 200, actor_login.text
+    assert actor_login.json()["token_type"] == "bearer"
+    headers = {"Authorization": f"Bearer {actor_login.json()['access_token']}"}
+    item_url = f"{url}/{record['id']}"
+    response = client.patch(
+        item_url, headers=headers, json={**payload, "paid": "500.75"},
+    )
+    assert response.status_code == 403, response.text
+    assert response.json() == {"detail": "Access denied"}
+    persisted = client.get(item_url, headers=admin_headers)
+    assert persisted.status_code == 200, persisted.text
+    assert persisted.json() == record
+    assert Decimal(persisted.json()["paid"]) == Decimal("100.10")
+
+
+def test_subcontractor_update_viewer_denied(client, db):
+    from app.models.users import ProjectMember
+
+    admin = make_user(db, "admin_sub_restore_update_viewer_denied@test.com", "Admin")
+    project = make_project(db, "Fictional Ballarat Renovation", admin.id)
+    admin_login = client.post(
+        "/auth/login", json={"email": admin.email, "password": "password123"},
+    )
+    assert admin_login.status_code == 200, admin_login.text
+    assert admin_login.json()["token_type"] == "bearer"
+    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+    payload = {
+        "trade": "Plumbing", "company": "Fictional Wattle Plumbing Pty Ltd",
+        "scope": "Bathroom renovation", "allowance": "2000.50",
+        "committed": "1500.25", "paid": "100.10", "status": "active",
+    }
+    url = f"/projects/{project.id}/subcontractors"
+    created = client.post(url, headers=admin_headers, json=payload)
+    assert created.status_code == 200, created.text
+    record = created.json()
+    assert record["project_id"] == str(project.id)
+    assert record["company"] == payload["company"]
+    assert record["trade"] == payload["trade"]
+    assert Decimal(record["paid"]) == Decimal("100.10")
+    actor = make_user(db, "actor_sub_restore_update_viewer_denied@test.com", "Viewer")
+    db.add(ProjectMember(
+        project_id=project.id, user_id=actor.id, project_role="Viewer",
+    ))
+    db.commit()
+    actor_login = client.post(
+        "/auth/login", json={"email": actor.email, "password": "password123"},
+    )
+    assert actor_login.status_code == 200, actor_login.text
+    assert actor_login.json()["token_type"] == "bearer"
+    headers = {"Authorization": f"Bearer {actor_login.json()['access_token']}"}
+    item_url = f"{url}/{record['id']}"
+    response = client.patch(
+        item_url, headers=headers, json={**payload, "paid": "500.75"},
+    )
+    assert response.status_code == 403, response.text
+    assert response.json() == {"detail": "Access denied"}
+    persisted = client.get(item_url, headers=admin_headers)
+    assert persisted.status_code == 200, persisted.text
+    assert persisted.json() == record
+    assert Decimal(persisted.json()["paid"]) == Decimal("100.10")
