@@ -21,6 +21,7 @@ export default function AppLayout() {
           {authenticated && (
             <nav aria-label="Main navigation">
               <NavLink to="/" end>Home</NavLink>
+              <NavLink to="/projects">Projects</NavLink>
               <span className="user-identity">{user.email}</span>
               <button type="button" onClick={signOut} disabled={loading}>Sign out</button>
             </nav>

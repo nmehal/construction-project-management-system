@@ -8,7 +8,16 @@ export default defineConfig({
   server: {
     proxy: {
       '^/auth(?:/|$)': { target: backendTarget },
-      '^/projects(?:/|$)': { target: backendTarget },
+      '^/projects(?:/|[?]|$)': {
+        target: backendTarget,
+        // Project screen URLs overlap API paths. Browser navigation needs the
+        // SPA entry; fetch requests use Accept: application/json and still proxy.
+        bypass(req) {
+          if (req.method === 'GET' && req.headers.accept?.includes('text/html')) {
+            return '/index.html';
+          }
+        },
+      },
     },
   },
   test: {
