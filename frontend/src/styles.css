@@ -36,3 +36,15 @@ p { max-width: 68ch; }
 .text-link { color: #245c46; font-weight: 600; text-underline-offset: 0.2em; }
 .skip-link { position: absolute; top: 0.5rem; left: 0.5rem; transform: translateY(-200%); padding: 0.75rem; background: #fff; color: #17352b; z-index: 1; }
 .skip-link:focus { transform: translateY(0); }
+
+.login-panel { max-width: 32rem; margin: 0 auto; }
+form { display: grid; gap: 0.75rem; }
+label { font-weight: 600; }
+input, button { font: inherit; border-radius: 0.3rem; }
+input { width: 100%; padding: 0.65rem; border: 1px solid #728579; }
+button { padding: 0.55rem 1rem; border: 1px solid #49715e; background: #245c46; color: #fff; cursor: pointer; }
+button:disabled { opacity: 0.65; cursor: wait; }
+input:focus-visible, button:focus-visible { outline: 3px solid #bd7025; outline-offset: 3px; }
+.form-error { color: #8b2424; background: #fff1f1; padding: 0.75rem; border: 1px solid #dfb5b5; }
+.app-header nav { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
+.user-identity { overflow-wrap: anywhere; font-size: 0.9rem; }

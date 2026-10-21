@@ -1,5 +1,6 @@
 import AppRoutes from './routes.jsx';
+import { AuthProvider } from './auth/AuthProvider.jsx';
 
 export default function App() {
-  return <AppRoutes />;
+  return <AuthProvider><AppRoutes /></AuthProvider>;
 }
