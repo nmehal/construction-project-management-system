@@ -7,6 +7,8 @@ import ProtectedRoute from './auth/ProtectedRoute.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
 import NewProjectPage from './pages/NewProjectPage.jsx';
 import ProjectDetailPage from './pages/ProjectDetailPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
+import BudgetPage from './pages/BudgetPage.jsx';
 
 export default function AppRoutes() {
   return (
@@ -18,6 +20,8 @@ export default function AppRoutes() {
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="projects/new" element={<NewProjectPage />} />
           <Route path="projects/:projectId" element={<ProjectDetailPage />} />
+          <Route path="projects/:projectId/dashboard" element={<DashboardPage />} />
+          <Route path="projects/:projectId/budget" element={<BudgetPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>

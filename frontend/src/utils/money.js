@@ -11,6 +11,14 @@ export function normalizeMoney(value) {
   const sign = negative && (units !== '0' || cents !== '00') ? '-' : '';
   return `${sign}${units}.${cents}`;
 }
+export function subtractMoney(left, right) {
+  const cents = (value) => BigInt(normalizeMoney(value).replace('.', ''));
+  const difference = cents(left) - cents(right);
+  const negative = difference < 0n;
+  const digits = (negative ? -difference : difference).toString().padStart(3, '0');
+  return `${negative ? '-' : ''}${digits.slice(0, -2)}.${digits.slice(-2)}`;
+}
+
 export function formatAUD(value) {
   try {
     const normalized = normalizeMoney(value);

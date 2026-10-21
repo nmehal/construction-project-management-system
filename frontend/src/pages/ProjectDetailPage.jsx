@@ -42,6 +42,10 @@ export default function ProjectDetailPage() {
         <div><h1>Project unavailable</h1><p role="alert" className="form-error">{error}</p><button onClick={() => setReload(reload + 1)}>Try again</button></div>
       ) : project && <>
         <h1>{project.name}</h1>
+        <nav className="project-modules" aria-label="Project modules">
+          <Link to={`/projects/${encodeURIComponent(project.id)}/dashboard`}>Dashboard</Link>
+          <Link to={`/projects/${encodeURIComponent(project.id)}/budget`}>Budget</Link>
+        </nav>
         <dl className="project-details">
           <div><dt>Client</dt><dd>{project.client ?? 'Not provided'}</dd></div>
           <div><dt>Suburb</dt><dd>{project.suburb ?? 'Not provided'}</dd></div>
