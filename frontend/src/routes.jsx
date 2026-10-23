@@ -11,6 +11,8 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import BudgetPage from './pages/BudgetPage.jsx';
 import VariationsPage from './pages/VariationsPage.jsx';
 
+import SubcontractorsPage from './pages/SubcontractorsPage.jsx';
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -23,6 +25,7 @@ export default function AppRoutes() {
           <Route path="projects/:projectId" element={<ProjectDetailPage />} />
           <Route path="projects/:projectId/dashboard" element={<DashboardPage />} />
           <Route path="projects/:projectId/budget" element={<BudgetPage />} />
+          <Route path="projects/:projectId/subcontractors" element={<SubcontractorsPage />} />
           <Route path="projects/:projectId/variations" element={<VariationsPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />

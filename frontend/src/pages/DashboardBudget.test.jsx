@@ -162,7 +162,7 @@ describe('module access and navigation', () => {
   it('links project detail to implemented modules and navigates Dashboard and Budget', async () => {
     open(); await screen.findByRole('heading', { name: 'Fictional Wattle Renovation' });
     const nav = within(screen.getByRole('navigation', { name: 'Project modules' }));
-    expect(nav.getAllByRole('link').map((link) => link.textContent)).toEqual(['Dashboard', 'Budget', 'Variations']);
+    expect(nav.getAllByRole('link').map((link) => link.textContent)).toEqual(['Dashboard', 'Budget', 'Variations', 'Subcontractors']);
     expect(nav.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', `/projects/${id}/dashboard`);
     expect(nav.getByRole('link', { name: 'Budget' })).toHaveAttribute('href', `/projects/${id}/budget`);
     fireEvent.click(nav.getByRole('link', { name: 'Dashboard' }));
