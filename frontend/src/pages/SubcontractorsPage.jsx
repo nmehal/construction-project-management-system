@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router';
 import { getProject } from '../api/projects.js';
 import { listSubcontractors, createSubcontractor, updateSubcontractor } from '../api/subcontractors.js';
 import useProjectRead from '../hooks/useProjectRead.js';
+import ProjectModuleNav from '../components/ProjectModuleNav.jsx';
 import { formatAUD, subtractMoney } from '../utils/money.js';
 async function load(id, signal) {
   const [project, subcontractors] = await Promise.all([getProject(id, signal), listSubcontractors(id, signal)]);
@@ -27,6 +28,7 @@ function SubcontractorsWorkspace({ projectId }) {
   return <section className="page-panel">
     <Link className="text-link" to={`/projects/${encodeURIComponent(projectId)}`}>Back to project</Link>
     <h1>Subcontractors</h1>
+    <ProjectModuleNav projectId={projectId} />
     {loading ? <p role="status">Loading subcontractors…</p> : error ? <><p role="alert" className="form-error">{error}</p><button onClick={retry}>Try again</button></> : data && <>
       <p className="intro">{data.project.name}</p>
       {saved && <p role="status">{saved}</p>}

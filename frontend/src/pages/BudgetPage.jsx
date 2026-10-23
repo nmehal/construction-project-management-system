@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router';
 import { getBudget } from '../api/budgets.js';
 import useProjectRead from '../hooks/useProjectRead.js';
+import ProjectModuleNav from '../components/ProjectModuleNav.jsx';
 import { formatAUD, subtractMoney } from '../utils/money.js';
 
 function remaining(category) {
@@ -14,6 +15,7 @@ export default function BudgetPage() {
     <section className="page-panel">
       <Link className="text-link" to={`/projects/${encodeURIComponent(projectId)}`}>Back to project</Link>
       <h1>Project budget</h1>
+      <ProjectModuleNav projectId={projectId} />
       <p className="muted">Read-only budget categories. Remaining is budget minus actual cost.</p>
       {loading ? <p role="status">Loading budget…</p> : error ? <>
         <p role="alert" className="form-error">{error}</p><button onClick={retry}>Try again</button>

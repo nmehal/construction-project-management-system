@@ -14,6 +14,7 @@ function matchingProxy(url) {
 
 describe('project screen/API development routing', () => {
   it.each([
+    ...['dashboard', 'budget', 'variations', 'subcontractors', 'claims'].map((module) => ['GET', `/projects/11111111-1111-4111-8111-111111111111/${module}`]),
     ['GET', '/projects'],
     ['GET', '/projects?include_archived=true'],
     ['GET', '/projects/11111111-1111-4111-8111-111111111111'],
@@ -30,6 +31,7 @@ describe('project screen/API development routing', () => {
   });
 
   it.each([
+    ...['dashboard', 'budget', 'variations', 'subcontractors', 'claims'].flatMap((module) => [`/projects/11111111-1111-4111-8111-111111111111/${module}`, `/projects/11111111-1111-4111-8111-111111111111/${module}?reload=true`]),
     '/projects', '/projects/new',
     '/projects/11111111-1111-4111-8111-111111111111',
     '/projects?include_archived=true',

@@ -4,6 +4,7 @@ import { getProject } from '../api/projects.js';
 import { listVariations, createVariation, updateVariation } from '../api/variations.js';
 import useProjectRead from '../hooks/useProjectRead.js';
 import VariationForm from '../components/VariationForm.jsx';
+import ProjectModuleNav from '../components/ProjectModuleNav.jsx';
 import { formatAUD } from '../utils/money.js';
 
 async function load(id, signal) {
@@ -29,6 +30,7 @@ function VariationsWorkspace({ projectId }) {
   return <section className="page-panel">
     <Link className="text-link" to={`/projects/${encodeURIComponent(projectId)}`}>Back to project</Link>
     <h1>Variations</h1>
+    <ProjectModuleNav projectId={projectId} />
     {loading ? <p role="status">Loading variations…</p> : error ? <><p role="alert" className="form-error">{error}</p><button onClick={retry}>Try again</button></> : data && <>
       <p className="intro">{data.project.name}</p>
       {saved && <p role="status">{saved}</p>}

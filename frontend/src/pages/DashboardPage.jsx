@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router';
 import { getDashboard } from '../api/dashboard.js';
 import useProjectRead from '../hooks/useProjectRead.js';
+import ProjectModuleNav from '../components/ProjectModuleNav.jsx';
 import { formatAUD } from '../utils/money.js';
 
 const groups = [
@@ -20,6 +21,7 @@ export default function DashboardPage() {
     <section className="page-panel">
       <Link className="text-link" to={`/projects/${encodeURIComponent(projectId)}`}>Back to project</Link>
       <h1>Project dashboard</h1>
+      <ProjectModuleNav projectId={projectId} />
       {loading ? <p role="status">Loading dashboard…</p> : error ? <>
         <p role="alert" className="form-error">{error}</p><button onClick={retry}>Try again</button>
       </> : !data ? <p>No dashboard data is available.</p> : <>

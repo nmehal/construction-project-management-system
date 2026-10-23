@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { archiveProject, getProject, updateProject } from '../api/projects.js';
 import ProjectForm from '../components/ProjectForm.jsx';
+import ProjectModuleNav from '../components/ProjectModuleNav.jsx';
 import { formatAUD } from '../utils/money.js';
 
 export default function ProjectDetailPage() {
@@ -20,7 +21,7 @@ export default function ProjectDetailPage() {
     getProject(projectId, controller.signal).then((data) => {
       if (!controller.signal.aborted) setProject(data);
     }).catch((failure) => {
-      if (!controller.signal.aborted) setError(failure.message || 'Unable to load project.');
+      if (!controller.signal.aborted) setError(failure.status === 403 ? 'Access denied. You do not have permission to view this project.' : failure.message || 'Unable to load project.');
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [projectId, reload]);
@@ -38,17 +39,11 @@ export default function ProjectDetailPage() {
   return (
     <section className="page-panel">
       <Link className="text-link" to="/projects">Back to projects</Link>
+      <ProjectModuleNav projectId={projectId} />
       {loading ? <p role="status">Loading project…</p> : error ? (
         <div><h1>Project unavailable</h1><p role="alert" className="form-error">{error}</p><button onClick={() => setReload(reload + 1)}>Try again</button></div>
       ) : project && <>
         <h1>{project.name}</h1>
-        <nav className="project-modules" aria-label="Project modules">
-          <Link to={`/projects/${encodeURIComponent(project.id)}/dashboard`}>Dashboard</Link>
-          <Link to={`/projects/${encodeURIComponent(project.id)}/budget`}>Budget</Link>
-          <Link to={`/projects/${encodeURIComponent(project.id)}/variations`}>Variations</Link>
-          <Link to={`/projects/${encodeURIComponent(project.id)}/subcontractors`}>Subcontractors</Link>
-          <Link to={`/projects/${encodeURIComponent(project.id)}/claims`}>Claims</Link>
-        </nav>
         <dl className="project-details">
           <div><dt>Client</dt><dd>{project.client ?? 'Not provided'}</dd></div>
           <div><dt>Suburb</dt><dd>{project.suburb ?? 'Not provided'}</dd></div>
