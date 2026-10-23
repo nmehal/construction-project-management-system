@@ -1,0 +1,60 @@
+name: construction-stage7a
+
+services:
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_DB: construction_db
+      POSTGRES_USER: ${POSTGRES_USER:-construction}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Supply an external POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-construction}:${POSTGRES_PASSWORD:?Supply an external POSTGRES_PASSWORD}@postgres:5432/construction_db
+      AUTH_SECRET: ${AUTH_SECRET:?Supply an external AUTH_SECRET of at least 16 characters}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import os, urllib.request; from sqlalchemy import create_engine, text; urllib.request.urlopen('http://127.0.0.1:8000/openapi.json', timeout=3); engine = create_engine(os.environ['DATABASE_URL']); connection = engine.connect(); connection.execute(text('SELECT 1')); connection.close(); engine.dispose()"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  postgres_data:
