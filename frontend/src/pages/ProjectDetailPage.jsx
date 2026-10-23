@@ -47,6 +47,7 @@ export default function ProjectDetailPage() {
           <Link to={`/projects/${encodeURIComponent(project.id)}/budget`}>Budget</Link>
           <Link to={`/projects/${encodeURIComponent(project.id)}/variations`}>Variations</Link>
           <Link to={`/projects/${encodeURIComponent(project.id)}/subcontractors`}>Subcontractors</Link>
+          <Link to={`/projects/${encodeURIComponent(project.id)}/claims`}>Claims</Link>
         </nav>
         <dl className="project-details">
           <div><dt>Client</dt><dd>{project.client ?? 'Not provided'}</dd></div>
