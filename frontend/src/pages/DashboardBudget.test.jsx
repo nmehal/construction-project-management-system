@@ -159,10 +159,10 @@ describe('module access and navigation', () => {
     expect(screen.queryByText(`Loading ${module}…`)).not.toBeInTheDocument();
   });
 
-  it('links project detail only to implemented Dashboard and Budget modules', async () => {
+  it('links project detail to implemented modules and navigates Dashboard and Budget', async () => {
     open(); await screen.findByRole('heading', { name: 'Fictional Wattle Renovation' });
     const nav = within(screen.getByRole('navigation', { name: 'Project modules' }));
-    expect(nav.getAllByRole('link').map((link) => link.textContent)).toEqual(['Dashboard', 'Budget']);
+    expect(nav.getAllByRole('link').map((link) => link.textContent)).toEqual(['Dashboard', 'Budget', 'Variations']);
     expect(nav.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', `/projects/${id}/dashboard`);
     expect(nav.getByRole('link', { name: 'Budget' })).toHaveAttribute('href', `/projects/${id}/budget`);
     fireEvent.click(nav.getByRole('link', { name: 'Dashboard' }));
