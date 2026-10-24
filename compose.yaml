@@ -3,6 +3,7 @@ name: construction-stage7a
 services:
   postgres:
     image: postgres:16-bookworm
+    restart: unless-stopped
     environment:
       POSTGRES_DB: construction_db
       POSTGRES_USER: ${POSTGRES_USER:-construction}
@@ -17,6 +18,7 @@ services:
       start_period: 10s
 
   backend:
+    restart: unless-stopped
     build:
       context: ./backend
     environment:
@@ -25,6 +27,8 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # Explicit proxy IPs only; loopback default does not trust other containers.
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
     expose:
       - "8000"
     depends_on:
@@ -42,10 +46,11 @@ services:
       start_period: 30s
 
   frontend:
+    restart: unless-stopped
     build:
       context: ./frontend
     ports:
-      - "8080:80"
+      - "${FRONTEND_BIND_IP:-0.0.0.0}:8080:80"
     depends_on:
       backend:
         condition: service_healthy
