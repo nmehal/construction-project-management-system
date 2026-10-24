@@ -28,16 +28,35 @@ Write controls depend on the user's permissions. Project modules share navigatio
 
 ## Screenshots
 
-Placeholders only. Add captures from a fictional demo workspace before publishing screenshots.
+### Projects
+![Projects list](docs/screenshots/01-projects-list.png)
 
-| Screen | Placeholder |
-| --- | --- |
-| Projects | Screenshot pending: project list and archive filter. |
-| Overview | Screenshot pending: project details and permitted actions. |
-| Dashboard | Screenshot pending: financial totals and status counts. |
-| Variations | Screenshot pending: variation register and form. |
-| Subcontractors | Screenshot pending: commitments and outstanding amounts. |
-| Claims | Screenshot pending: claim register and payment status. |
+Project list showing active projects and top-level navigation.
+
+### Project overview
+![Project overview](docs/screenshots/02-project-overview.png)
+
+Project overview with contract details, project role and module navigation.
+
+### Dashboard
+![Project dashboard](docs/screenshots/03-project-dashboard.png)
+
+Dashboard summarising contract, variation, subcontractor and progress-claim KPIs.
+
+### Variations
+![Variations](docs/screenshots/04-variations.png)
+
+Variation tracking with cost change, margin, backend-calculated total and status.
+
+### Subcontractors
+![Subcontractors](docs/screenshots/05-subcontractors.png)
+
+Subcontractor commitments showing allowance, committed, paid and outstanding values.
+
+### Progress claims
+![Progress claims](docs/screenshots/06-progress-claims.png)
+
+Progress-claim tracking with amount, status, claim date and paid date.
 
 ## Architecture and stack
 
