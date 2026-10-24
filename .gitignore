@@ -9,3 +9,7 @@ __pycache__/
 /frontend/coverage/
 /frontend/.env*
 !/frontend/.env.example
+
+# Playwright artifacts
+frontend/test-results/
+frontend/playwright-report/
